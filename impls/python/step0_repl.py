@@ -1,29 +1,35 @@
+# TODO: Implement history functionality here
 import sys, traceback
-import mal_readline
 
-# read
-def READ(str):
-    return str
+PROMPT = "user> "
+EOF = ""
 
-# eval
-def EVAL(ast, env):
-        #print("EVAL %s" % printer._pr_str(ast))
-        return ast
+def READ(inp: str):
+    return inp
 
-# print
-def PRINT(exp):
+def EVAL(ast: str, env: dict|None):
+    return ast
+
+def PRINT(exp: str): 
     return exp
 
-# repl
-def REP(str):
-    return PRINT(EVAL(READ(str), {}))
+def rep(inp: str):
+    return PRINT(EVAL(READ(inp), None))
 
-# repl loop
-while True:
-    try:
-        line = mal_readline.readline("user> ")
-        if line == None: break
-        if line == "": continue
-        print(REP(line))
-    except Exception as e:
-        print("".join(traceback.format_exception(*sys.exc_info())))
+def main():
+    while True:
+        try:
+            line: str = input(PROMPT)
+            if line is None:
+                break
+            print(rep(line))
+        except EOFError as e:
+            print()
+            break
+        except Exception as e:
+            # For non EOF exceptions print a traceback for debugging
+            print(" ".join(traceback.format_exception(e)))
+            break
+
+if __name__ == "__main__":
+    main()
