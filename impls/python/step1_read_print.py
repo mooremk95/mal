@@ -1,17 +1,22 @@
 # TODO: Implement history functionality here
 import sys, traceback
 
+from malTypes import MalType
+from reader import read_str
+from printer import pr_str
+
+
 PROMPT = "user> "
 EOF = ""
 
-def READ(inp: str):
-    return inp
+def READ(inp: str) -> MalType:
+    return read_str(inp)
 
 def EVAL(ast: str, env: dict|None):
     return ast
 
-def PRINT(exp: str): 
-    return exp
+def PRINT(ast: MalType): 
+    return pr_str(ast)
 
 def rep(inp: str):
     return PRINT(EVAL(READ(inp), None))
@@ -24,8 +29,7 @@ def main():
                 break
             print(rep(line))
         except EOFError as e:
-            print()
-            break
+            print('EOF error. Expression was missing one or more closing brace or string quote') 
         except Exception as e:
             # For non EOF exceptions print a traceback for debugging
             print(" ".join(traceback.format_exception(e)))
