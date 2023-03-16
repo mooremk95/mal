@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 class MalType:
     pass
@@ -33,7 +33,21 @@ class String(MalType):
     def get_value(self):
         return self._val
 
-    
+class Keyword(MalType):
+    _val: str
+
+    def __init__(self, token: str):
+        self._val = token
+
+    def __repr__(self):
+        return self._val
+
+    def __str__(self):
+        return self.__repr__()
+
+    def get_value(self):
+        return self._val
+
 
 class Num(MalType):
     _value: int|float
@@ -93,9 +107,8 @@ class Nil(MalType):
     def get_value(self):
         return None
 
-
-class MalList(MalType):
-    _mal_list: Tuple
+class MalCollection(MalType):
+    _mal_members: Tuple
 
     class MalIter:
         _list: Tuple
@@ -118,14 +131,25 @@ class MalList(MalType):
         except AssertionError as e:
             print([(m, type(m)) for m in members])
             raise e
-        self._mal_list = tuple(members)  
+        self._mal_members = tuple(members)  
 
     def __iter__(self):
         return self.MalIter(self)
 
+    def get_value(self) -> Tuple[MalType]:
+        return self._mal_members
+
+
+
+
+class MalList(MalCollection):
+
+    def __init__(self, members):
+        MalCollection.__init__(self, members)
+
     def __repr__(self):
         rep = "("
-        for member in self._mal_list:
+        for member in self._mal_members:
             rep += f" {str(member) }"
         rep += ")"
         return
@@ -133,8 +157,31 @@ class MalList(MalType):
     def __str__(self):
         return self.__repr__()
 
-    def size(self) -> int:
-        return len(self._mal_list)
-    
-    def get_value(self) -> Tuple[MalType]:
-        return self._mal_list
+class Vector(MalList):
+    """
+    I'm sure ths class will change int he future, but right now this is just 
+    a MalList which was created with "[]" brackets instead of "()" parens.
+    """
+    def __init__(self, members):
+        MalList.__init__(self, members)
+
+class HashMap(MalCollection):
+    """
+    An associative array with key-value pairs. Keys may be of type String and Keywords.
+    """
+    _mapping: Dict 
+
+    def __init__(self, members):
+        if len(members) % 2:
+            raise EOFError(f"Map with {len(members)} members values is unbalanced.")
+        MalCollection.__init__(self, members)
+        # evens are kyes, odds are values
+        self._mapping = {k: v for k, v in zip(members[0::2], members[1::2])} 
+
+    def get(key: String | Keyword):
+        key_val = key.get_value()
+        if key_val not in self._mapping:
+            return Nil()
+        return self._mapping.get(key_val)
+
+

@@ -1,6 +1,6 @@
 import re
-from typing import Tuple
-from malTypes import MalType, MalList, Num, Symbol, MalFalse, MalTrue, Nil, String
+from typing import Tuple, List
+from malTypes import *
 
 """
 This module is a class and collection of funcitons which serve to read in a line of MAL code and generate an 
@@ -41,11 +41,7 @@ def read_from(reader: Reader) -> MalType:
     calls read_atom
     """
     token = reader.peak()
-    # Tests seme to implt {} and [] make lists too
-    #if token.startswith("(")
     if len(token) > 0 and token[0] in ("(", "[", "{"):
-        # Kinda hacky, but discard the 1st token of a list so as not to cause infinite recursion
-        # _ = reader.next() 
         return read_list(reader)
     else:
         return read_atom(reader)
@@ -63,9 +59,15 @@ def read_list(reader: Reader) -> MalList:
     while not token.endswith(closer):
         raw_mal_list.append(read_from(reader))
         token = reader.peak()
-    # once we see the closing ")" call next to remove it from the token sequence
+    # once we see the closing c call next to remove it from the token sequence
     reader.next()
-    return MalList(raw_mal_list)
+    # Then decide what type of "list" this is TODO: make a proper class hierarhcy w/ a collections class
+    if "]" == closer:
+        return Vector(raw_mal_list)
+    elif "}" == closer:
+        return HashMap(raw_mal_list)
+    else: 
+        return MalList(raw_mal_list)
 
 def read_atom(reader: Reader):
     """ 
@@ -88,6 +90,8 @@ def read_atom(reader: Reader):
         raise EOFError(f"Token: {token} is an unbalanced string")
     elif is_int(token) or is_float(token):
         return Num(token)
+    elif token.startswith(":"):
+        return Keyword(token)
     else:
         return Symbol(token)
 
@@ -109,12 +113,64 @@ def read_str(ipt: str) -> MalType:
 
 def tokenize(statement: str) -> Tuple[str]:
     """
-    Function which uses a regex to identify MAL tokens (keywords, key characters, numbers, strings, symbols). This simply generates a sequence of 
+    Function which uses a regex to identify MAL tokens (keywords, key cacters, numbers, strings, symbols). This simply generates a sequence of 
     tokens in the form of a tuple. This function does not concern itself with the MAL data types. 
     """
-    # get group 1 rather than gorup 0 is the entire match, and may include useless whitespace characters
+    statement = apply_macros(strip_comments(statement))
+    if not verify_pairs_close(statement):
+        raise EOFError("Expression entered is unbalanced in one of (), [], \{\} \"\" or \\")
+    # get group 1 rather than gorup 0 is the entire match, and may include useless whitespace cacters
     return tuple(match.group(1) for match in MAL_PATTERN.finditer(statement))
 
+def strip_comments(statement: str) -> str:
+    if ";" == statement:
+        return ""
+    if ";" in statement:
+        in_quotes = False
+        for i, c in enumerate(statement):
+            if '"' == c:
+                in_quotes = not in_quotes
+                continue
+            if not in_quotes and ";" == c:
+                return statement[:i]
+    return statement
+
+def apply_macros(statement: str) -> str:
+    # TODO: this
+    return statement
+
+def verify_pairs_close(in_str: str) -> bool:
+    """ 
+    This function takes the input string, matches ()'s []'s, {}'s and unescaped "s and 's
+    If it doesn't find a corresponding closing c for each opening char it returns False, else True
+    """
+    closers: Tuple = (")", "]", "}")
+    openers: tuple = ("(", "[", "{")
+    closer_to_opener: Dict = {")": "(", "]": "[", "}": "{"}
+    last_open: List[Str] = []  # list functions as a stack of seen openers
+    in_quotes = False
+    escapes = 0
+    for c in in_str: 
+        # check if we are adding a sequential escaping via the "\"
+        if "\\" == c:
+            escapes += 1
+            continue
+        # when we're in quotes, all we care about is exiting quotes
+        if not escapes % 2 and '"'  == c:
+            in_quotes = not in_quotes
+        if in_quotes:  # skip when we find outselves in quotes w/ non "\" char 
+            escapes = 0
+            continue
+        if c in openers:   
+            last_open.append(c)
+        elif c in closers:
+            if closer_to_opener[c] == last_open[-1]:
+                last_open.pop()
+            else:
+                return False
+        # If we get here, we processed a non "\" char, meaning we reset escapes
+        escapes = 0 
+    return not escapes % 2 and len(last_open) == 0 and not in_quotes
 
 
 

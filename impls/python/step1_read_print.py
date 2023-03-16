@@ -1,4 +1,5 @@
-# TODO: Implement history functionality here
+#TODO: Work on some deferrable functionality
+# macro replacements (see test1)
 import sys, traceback
 
 from malTypes import MalType
@@ -7,7 +8,6 @@ from printer import pr_str
 
 
 PROMPT = "user> "
-EOF = ""
 
 def READ(inp: str) -> MalType:
     return read_str(inp)
