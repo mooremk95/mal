@@ -1,5 +1,16 @@
 #TODO: Work on some deferrable functionality
 # macro replacements (see test1)
+
+"""
+- 'a -> (quote a)
+- '(a b c... n) -> (quote (a b c... n))
+- `a -> (quasiquote a)
+- `(a b c... n) -> (quasiquote a b c... n)
+- ~a -> (unqote a)
+- ~(1 2 3) -> (unquote (1 2 3))
+- `(1 ~a 3) -> (quasiquote (1 (unquote a) 3))
+- ~a(1 2 3) -> (splice-unquote (1 2 3))
+"""
 import sys, traceback
 
 from malTypes import MalType
@@ -26,6 +37,8 @@ def main():
         try:
             line: str = input(PROMPT)
             if line is None:
+                break
+            elif "(exit)" == line.replace(" ", "").replace("\t", ""):
                 break
             print(rep(line))
         except EOFError as e:
