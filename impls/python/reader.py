@@ -61,7 +61,7 @@ def read_list(reader: Reader) -> MalList:
         token = reader.peak()
     # once we see the closing c call next to remove it from the token sequence
     reader.next()
-    # Then decide what type of "list" this is TODO: make a proper class hierarhcy w/ a collections class
+    # Then decide what type of "list" this is 
     if "]" == closer:
         return Vector(raw_mal_list)
     elif "}" == closer:
@@ -136,8 +136,33 @@ def strip_comments(statement: str) -> str:
     return statement
 
 def apply_macros(statement: str) -> str:
-    # TODO: this
-    return statement
+    # apply quotes
+    result = apply_macro(statement, "'", "quote") 
+    # apply quasiquotes
+    result = apply_macro(result, "`", "quasiquote") 
+    # apply unquotes
+    result = apply_macro(result, "~", "unquote")
+    # apply splize-unquote
+    result = apply_macro(result, "~@", "splice-unquote") 
+    # apply deref
+    result = re.sub(r"@([0-9A-z?!$\?-]+)", r"(deref \g<1>)", result)
+    return result
+
+def apply_macro(statement: str, macro_chars: str, substitution: str) -> str:
+    """
+    Arguably hacky, but iteratively apply regex substitution to handle nested quote macros.
+    """
+    last = statement
+    new = re.sub(f"{macro_chars}([0-9A-z-?_]+|\([ 0-9A-z-?_'`~@]+\))", 
+                    f"({substitution} \g<1>)",
+                    statement)
+    while new != last:
+        last = new
+        new = re.sub(f"{macro_chars}([0-9A-z-?_]+|\([ 0-9A-z-?_'`~@]+\))", 
+                    f"({substitution} \g<1>)",
+                    last)
+    return new
+
 
 def verify_pairs_close(in_str: str) -> bool:
     """ 
@@ -181,9 +206,13 @@ if __name__ == "__main__":
         "(- 40 20)",
         " ( + 7 7 7 7    7) ",
         "( * 4 (+ 3 2))",
-        "(testing (lists) (with multiple ) (lists (inside)))"
-        "(test (commas,as,whitespace))"
-        ""
+        "(testing (lists) (with multiple ) (lists (inside)))",
+        "(test (commas,as,whitespace))",
+        "'(1 2 3)",
+        "`1",
+        "~1",
+        "~@(1 2 3)"
+
     ]
     for expr in list_exprs:
         tokens = tokenize(expr)
