@@ -175,7 +175,7 @@ class HashMap(MalCollection):
         if len(members) % 2:
             raise EOFError(f"Map with {len(members)} members values is unbalanced.")
         MalCollection.__init__(self, members)
-        # evens are kyes, odds are values
+        # evens are keys, odds are values
         self._mapping = {k: v for k, v in zip(members[0::2], members[1::2])} 
 
     def get(key: String | Keyword):
